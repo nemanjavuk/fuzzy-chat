@@ -61,10 +61,17 @@ $(function() {
       $inputMessage.val('');
       addChatMessage({
         username: username,
-        message: message
+        message: {
+          text: message,
+          datetime: $.now()
+        }
       });
       // tell server to execute 'new message' and send along one parameter
-      socket.emit('new message', message);
+      var data = {
+        text: message,
+        datetime: $.now()
+      };
+      socket.emit('new message', data);
     }
   }
 
@@ -88,7 +95,7 @@ $(function() {
     .text(data.username)
     .css('color', getUsernameColor(data.username));
     var $messageBodyDiv = $('<span class="messageBody">')
-    .text(data.message);
+    .text(data.message.text);
 
     var typingClass = data.typing ? 'typing' : '';
     var $messageDiv = $('<li class="message"/>')
@@ -102,7 +109,9 @@ $(function() {
   // Adds the visual chat typing message
   function addChatTyping (data) {
     data.typing = true;
-    data.message = 'is typing';
+    data.message = {
+      text: 'is typing'
+    };
     addChatMessage(data);
   }
 
