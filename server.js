@@ -4,6 +4,7 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
+var mongo = require('mongodb').MongoClient;
 
 server.listen(port, function() {
   console.log('Server listening at port %d', port);
@@ -19,11 +20,30 @@ var usernames = {};
 var numUsers = 0;
 
 io.on('connection', function(socket) {
+  console.log('connection ' + socket.username + ' is connected');
   var addedUser = false;
 
   // when the client emits 'new message', this listens and executes
   socket.on('new message', function(data) {
+    var date = new Date();
     console.log('from ' + socket.username + ': ' + data.text + ' at ' + data.datetime);
+    console.log('server time is ' + date.getTime() + ' and offset ' + date.getTimezoneOffset() + ' and client time is ' + data.datetime + ' with offset ' + data.offset);
+    console.log('number of users is ' + Object.keys(usernames).length);
+
+    mongo.connect("mongodb://localhost:27017/mydb", function(err, db) {
+      if(!err) {
+        console.log("We are connected");
+        var collection = db.collection('chat');
+        collection.insert({ username: socket.username, message: data }, function (err, o) {
+          if (err) {
+            console.warn(err.message);
+          } else {
+            console.log("chat message inserted into db: " + data.text);
+          }
+        });
+      }
+    });
+
     // we tell the client to execute 'new message'
     socket.broadcast.emit('new message', {
       username: socket.username,
@@ -33,7 +53,7 @@ io.on('connection', function(socket) {
 
   // when the client emits 'add user', this listens and executes
   socket.on('add user', function(username) {
-    console.log(username + ' is connected');
+    console.log(username + ' is connected with add user');
     // we store the username in the socket session for this client
     socket.username = username;
     // add the client's username to the global list
@@ -47,6 +67,16 @@ io.on('connection', function(socket) {
     socket.broadcast.emit('user joined', {
       username: socket.username,
       numUsers: numUsers
+    });
+
+    mongo.connect("mongodb://localhost:27017/mydb", function (err, db) {
+      var collection = db.collection('chat')
+      var stream = collection.find().sort({ "message.datetime" : -1 }).limit(10).stream();
+      stream.on('data', function (elem) {
+        console.log(elem);
+        console.log('broadcasting new message ' + elem.username + ' ' + elem.message.text + ' ' + elem.message.datetime + ' ' + elem.message.offset);
+        socket.emit('new message', elem);
+      });
     });
   });
 
@@ -71,6 +101,7 @@ io.on('connection', function(socket) {
     if (addedUser) {
       delete usernames[socket.username];
       --numUsers;
+      console.log('number of users after delete is ' + Object.keys(usernames).length);
 
       // echo globally that this client has left
       socket.broadcast.emit('user left', {
@@ -79,4 +110,5 @@ io.on('connection', function(socket) {
       });
     }
   });
+
 });

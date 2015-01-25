@@ -59,17 +59,20 @@ $(function() {
     // if there is a non-empty message and a socket connection
     if (message && connected) {
       $inputMessage.val('');
+      var datetime = new Date();
       addChatMessage({
         username: username,
         message: {
-          text: message,
-          datetime: $.now()
+          text: message
+          // datetime: datetime,
+          // offset: datetime.getTimezoneOffset()
         }
       });
       // tell server to execute 'new message' and send along one parameter
       var data = {
         text: message,
-        datetime: $.now()
+        datetime: datetime.getTime(),
+        offset: datetime.getTimezoneOffset()
       };
       socket.emit('new message', data);
     }
@@ -83,6 +86,7 @@ $(function() {
 
   // Adds the visual chat message to the message list
   function addChatMessage (data, options) {
+    console.log('into add chat message');
     // Don't fade the message in if there is an 'X was typing'
     var $typingMessages = getTypingMessages(data);
     options = options || {};
@@ -252,6 +256,7 @@ $(function() {
 
   // Whenever the server emits 'user joined', log it in the chat body
   socket.on('user joined', function (data) {
+    console.log('user joined received');
     log(data.username + ' joined');
     addParticipantsMessage(data);
   });
