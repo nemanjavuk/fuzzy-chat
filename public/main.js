@@ -41,13 +41,26 @@ $(function() {
 
     // If the username is valid
     if (username) {
-      $loginPage.fadeOut();
-      $chatPage.show();
-      $loginPage.off('click');
-      $currentInput = $inputMessage.focus();
+      $.ajax({
+        type: "POST",
+        url: "/login",
+        data: JSON.stringify({user: username}),
+        contentType: "application/json; charset=utf-8"
+      })
+      .done(function( msg ) {
+        console.log(msg);
+        $loginPage.fadeOut();
+        $chatPage.show();
+        $loginPage.off('click');
+        $currentInput = $inputMessage.focus();
 
-      // Tell the server your username
-      socket.emit('add user', username);
+        // Tell the server your username
+        socket.emit('add user', username);
+      })
+      .fail(function (err){
+        console.log("Error!");
+      });
+
     }
   }
 
@@ -63,9 +76,9 @@ $(function() {
       addChatMessage({
         username: username,
         message: {
-          text: message
-          // datetime: datetime,
-          // offset: datetime.getTimezoneOffset()
+          text: message,
+          datetime: datetime.getTime(),
+          offset: datetime.getTimezoneOffset()
         }
       });
       // tell server to execute 'new message' and send along one parameter
@@ -87,6 +100,7 @@ $(function() {
   // Adds the visual chat message to the message list
   function addChatMessage (data, options) {
     console.log('into add chat message');
+    console.log('from ' + data.username);
     // Don't fade the message in if there is an 'X was typing'
     var $typingMessages = getTypingMessages(data);
     options = options || {};
@@ -201,6 +215,16 @@ $(function() {
     return COLORS[index];
   }
 
+  function informConnError(err) {
+    console.log('connection is down with');
+    console.log(err);
+  }
+
+  function informReconnect() {
+    // socket.emit('add user', username);
+    console.log('client reconnected');
+  }
+
   // Keyboard events
 
   $window.keydown(function (event) {
@@ -276,5 +300,13 @@ $(function() {
   // Whenever the server emits 'stop typing', kill the typing message
   socket.on('stop typing', function (data) {
     removeChatTyping(data);
+  });
+
+  socket.on('connect_error', function(err){
+    informConnError(err);
+  });
+
+  socket.on('reconnect', function(){
+    informReconnect();
   });
 });
