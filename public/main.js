@@ -73,20 +73,17 @@ $(function() {
     if (message && connected) {
       $inputMessage.val('');
       var datetime = new Date();
-      addChatMessage({
-        username: username,
-        message: {
-          text: message,
-          datetime: datetime.getTime(),
-          offset: datetime.getTimezoneOffset()
-        }
-      });
-      // tell server to execute 'new message' and send along one parameter
+      console.log(datetime.getTime() + (datetime.getTimezoneOffset() * 60000));
       var data = {
         text: message,
-        datetime: datetime.getTime(),
+        datetime: (datetime.getTime() + (datetime.getTimezoneOffset() * 60000)),
         offset: datetime.getTimezoneOffset()
-      };
+      }
+      addChatMessage({
+        username: username,
+        message: data
+      });
+      // tell server to execute 'new message' and send along one parameter
       socket.emit('new message', data);
     }
   }
@@ -99,8 +96,8 @@ $(function() {
 
   // Adds the visual chat message to the message list
   function addChatMessage (data, options) {
-    console.log('into add chat message');
-    console.log('from ' + data.username);
+    // console.log('into add chat message');
+    // console.log('from ' + data.username);
     // Don't fade the message in if there is an 'X was typing'
     var $typingMessages = getTypingMessages(data);
     options = options || {};
@@ -116,7 +113,7 @@ $(function() {
     .text(data.message.text);
 
     var typingClass = data.typing ? 'typing' : '';
-    var $messageDiv = $('<li class="message"/>')
+    var $messageDiv = $('<li class="message" data-datetime="' + data.message.datetime + '"/>')
     .data('username', data.username)
     .addClass(typingClass)
     .append($usernameDiv, $messageBodyDiv);
@@ -169,6 +166,13 @@ $(function() {
       $messages.append($el);
     }
     $messages[0].scrollTop = $messages[0].scrollHeight;
+
+    console.log('#going to sorting');
+    $messages.children("li").sort(function(a, b){
+      return (parseInt($(a).data('datetime'))) - parseInt(($(b).data('datetime')));
+    }).each(function() {
+      $messages.append($(this));
+    })
   }
 
   // Prevents input from having injected markup
@@ -266,11 +270,11 @@ $(function() {
   socket.on('login', function (data) {
     connected = true;
     // Display the welcome message
-    var message = "Welcome to Socket.IO Chat – ";
-    log(message, {
-      prepend: true
-    });
-    addParticipantsMessage(data);
+    // var message = "Welcome to Wundertest Chat – ";
+    // log(message, {
+    //   prepend: true
+    // });
+    // addParticipantsMessage(data);
   });
 
   // Whenever the server emits 'new message', update the chat body
@@ -281,25 +285,25 @@ $(function() {
   // Whenever the server emits 'user joined', log it in the chat body
   socket.on('user joined', function (data) {
     console.log('user joined received');
-    log(data.username + ' joined');
-    addParticipantsMessage(data);
+    // log(data.username + ' joined');
+    // addParticipantsMessage(data);
   });
 
   // Whenever the server emits 'user left', log it in the chat body
   socket.on('user left', function (data) {
-    log(data.username + ' left');
-    addParticipantsMessage(data);
-    removeChatTyping(data);
+    // log(data.username + ' left');
+    // addParticipantsMessage(data);
+    // removeChatTyping(data);
   });
 
   // Whenever the server emits 'typing', show the typing message
   socket.on('typing', function (data) {
-    addChatTyping(data);
+    // addChatTyping(data);
   });
 
   // Whenever the server emits 'stop typing', kill the typing message
   socket.on('stop typing', function (data) {
-    removeChatTyping(data);
+    // removeChatTyping(data);
   });
 
   socket.on('connect_error', function(err){

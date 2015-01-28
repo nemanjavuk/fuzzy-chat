@@ -41,12 +41,19 @@ var numUsers = 0;
 
 var getUsernameFromSession = function(socketRequest) {
   var sessionId = socketRequest.sessionID;
-  var cookie = JSON.parse(socketRequest.sessionStore.sessions[sessionId]);
+  // console.log(socketRequest);
+  try {
+    var cookie = JSON.parse(socketRequest.sessionStore.sessions[sessionId]);
+  } catch (err) {
+    return null;
+  }
   return cookie.username;
 };
 
 app.post('/login', function(req, res){
   req.session.username = req.body.user;
+  // console.log(req.body.user);
+  // console.log(req.session.username);
   res.sendStatus(200);
 });
 
@@ -58,9 +65,9 @@ io.on('connection', function(socket) {
   socket.on('new message', function(data) {
     var usernameSession = getUsernameFromSession(socket.request);
     var date = new Date();
-    console.log('from ' + usernameSession + ': ' + data.text + ' at ' + data.datetime);
-    console.log('server time is ' + date.getTime() + ' and offset ' + date.getTimezoneOffset() + ' and client time is ' + data.datetime + ' with offset ' + data.offset);
-    console.log('number of users is ' + Object.keys(usernames).length);
+    // console.log('from ' + usernameSession + ': ' + data.text + ' at ' + data.datetime);
+    // console.log('server time is ' + date.getTime() + ' and offset ' + date.getTimezoneOffset() + ' and client time is ' + data.datetime + ' with offset ' + data.offset);
+    // console.log('number of users is ' + Object.keys(usernames).length);
 
     mongo.connect("mongodb://localhost:27017/mydb", function(err, db) {
       if(!err) {
@@ -70,7 +77,7 @@ io.on('connection', function(socket) {
           if (err) {
             console.warn(err.message);
           } else {
-            console.log("chat message inserted into db: " + data.text);
+            console.log("chat inserted into db: " + data.text + "@" + data.datetime);
           }
         });
       }
@@ -110,9 +117,11 @@ io.on('connection', function(socket) {
           return;
         }
         for (var i = messages.length-1; i >= 0; --i) {
+          console.log('emitting ' + messages[i].username + ":" + messages[i].message.text + '@' + messages[i].message.datetime);
           socket.emit('new message', messages[i]);
         }
       });
+      console.log('<<<<<<<<<<<<<>>>>>>>>>>>>>>>');
     });
   });
 
