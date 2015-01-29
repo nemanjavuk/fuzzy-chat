@@ -10,16 +10,19 @@ var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
 var mongo = require('mongodb').MongoClient;
 
+var MONGO_PATH = "mongodb://localhost:27017/mydb";
+var CHAT_COLLECTION = "chat";
+
 var sessionMiddleware = session({
   name: 'sid',
-  store: sessionStore, // MemoryStore
+  store: sessionStore, // MemoryStore; for example Redis should be used for production
   secret: 's3cr37',
   saveUninitialized: true,
   resave: false,
 });
 
 
-//a way to pass the same session in both express and socket.io
+//a way to use the same session in both express and socket.io
 io.use(function(socket, next) {
   sessionMiddleware(socket.request, socket.request.res, next);
 });
@@ -41,7 +44,6 @@ var numUsers = 0;
 
 var getUsernameFromSession = function(socketRequest) {
   var sessionId = socketRequest.sessionID;
-  // console.log(socketRequest);
   try {
     var cookie = JSON.parse(socketRequest.sessionStore.sessions[sessionId]);
   } catch (err) {
@@ -52,8 +54,11 @@ var getUsernameFromSession = function(socketRequest) {
 
 app.post('/login', function(req, res){
   req.session.username = req.body.user;
-  // console.log(req.body.user);
-  // console.log(req.session.username);
+  res.sendStatus(200);
+});
+
+app.get('/logout', function(req, res) {
+  req.session.username = null
   res.sendStatus(200);
 });
 
@@ -65,14 +70,11 @@ io.on('connection', function(socket) {
   socket.on('new message', function(data) {
     var usernameSession = getUsernameFromSession(socket.request);
     var date = new Date();
-    // console.log('from ' + usernameSession + ': ' + data.text + ' at ' + data.datetime);
-    // console.log('server time is ' + date.getTime() + ' and offset ' + date.getTimezoneOffset() + ' and client time is ' + data.datetime + ' with offset ' + data.offset);
-    // console.log('number of users is ' + Object.keys(usernames).length);
 
-    mongo.connect("mongodb://localhost:27017/mydb", function(err, db) {
+    mongo.connect(MONGO_PATH, function(err, db) {
       if(!err) {
         // console.log("We are connected");
-        var collection = db.collection('chat');
+        var collection = db.collection(CHAT_COLLECTION);
         collection.insert({ username: usernameSession, message: data }, function (err, o) {
           if (err) {
             console.warn(err.message);
@@ -93,8 +95,6 @@ io.on('connection', function(socket) {
   // when the client emits 'add user', this listens and executes
   socket.on('add user', function(username) {
     var usernameSession = getUsernameFromSession(socket.request);
-    // add the client's username to the global list
-    usernames[username] = username;
     ++numUsers;
     addedUser = true;
     socket.emit('login', {
@@ -106,18 +106,13 @@ io.on('connection', function(socket) {
       numUsers: numUsers
     });
 
-    mongo.connect("mongodb://localhost:27017/mydb", function (err, db) {
-      var collection = db.collection('chat')
-      // var stream = collection.find().sort({ "message.datetime" : -1 }).limit(10).stream();
-      // stream.on('data', function (elem) {
-        // socket.emit('new message', elem);
-      // });
+    mongo.connect(MONGO_PATH, function (err, db) {
+      var collection = db.collection(CHAT_COLLECTION);
       collection.find().sort({ "message.datetime" : -1}).limit(10).toArray(function(err, messages){
         if (err){
           return;
         }
         for (var i = messages.length-1; i >= 0; --i) {
-          console.log('emitting ' + messages[i].username + ":" + messages[i].message.text + '@' + messages[i].message.datetime);
           socket.emit('new message', messages[i]);
         }
       });
@@ -141,21 +136,18 @@ io.on('connection', function(socket) {
     });
   });
 
-  // when the user disconnects.. perform this
+  // when the user disconnects..
   socket.on('disconnect', function() {
-    // remove the username from global usernames list
     console.log(socket.username + ' has disconnected');
-    // if (addedUser) {
-    //   delete usernames[socket.username];
-    //   --numUsers;
-    //   console.log('number of users after delete is ' + Object.keys(usernames).length);
-    //
-    //   // echo globally that this client has left
-    //   socket.broadcast.emit('user left', {
-    //     username: socket.username,
-    //     numUsers: numUsers
-    //   });
-    // }
+    var usernameSession = getUsernameFromSession(socket.request);
+    if (usernameSession != null){
+      --numUsers;
+      //inform everyone that this client has left
+      socket.broadcast.emit('user left', {
+        username: usernameSession,
+        numUsers: numUsers
+      });
+    }
   });
 
 });
