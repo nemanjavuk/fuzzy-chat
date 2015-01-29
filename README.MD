@@ -2,6 +2,16 @@
 ##Technologies
 I opted for the Node.js as the technology for implementing this solution for a couple of reasons. First, Node.js is a platform I have the most experience in out of all platforms mentioned in the job post for this position. The other big reason for opting for Node.js is the [Socket.io](http://www.socket.io) library for realtime applications which, at first sight, perfectly fitted the use case presented in the task. Socket.io is the library that directly communicates with network sockets and with it a bi-directional communication between clients and a server is made much more easier. Socket.io fallbacks to WebSockets with polling as a fallback option. It also has libraries for both Android and iOS so the same server could communicate with both Web browser clients as well as with Android and iOS with the same API. Wunderlist would benefit from this because it has clients in both of these technologies. A part from Node.js and Socket.io, express was used and MongoDB as a db for storing chat messages.
 
+##Socket.io custom events
+* `new message` : when a client sends a message the server gets it and broadcasts it to all other clients
+* `add user` : when a client logs in to inform all other clients
+* `back online` : when a client gets back online
+* `typing` : when a client starts to type
+* `stop typing` : when a client stops typing
+* `disconnect` : when a client disconnects
+Other events are default socket.io events.
+
+
 ##Scaling
 The code I submitted is, of course, pretty basic because it doesn't take into account scalling the app to multiple Node servers. It even has only a MemoryStore for it's session handling (it should be replaced with Redis for example. We don't want to lose our sessions if the server restarts do we? :)). To scale this application I would layer an architecture in 3 layers:
 
