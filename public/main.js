@@ -23,6 +23,8 @@ $(function() {
   var lastTypingTime;
   var $currentInput = $usernameInput.focus();
 
+  var lastDatetime;
+
   var socket = io();
 
   function addParticipantsMessage (data) {
@@ -117,6 +119,11 @@ $(function() {
     .data('username', data.username)
     .addClass(typingClass)
     .append($usernameDiv, $messageBodyDiv);
+
+    //keeping track of the last message datetime from other users
+    if (data.username != username) {
+      lastDatetime = data.message.datetime;
+    }
 
     addMessageElement($messageDiv, options);
   }
@@ -219,13 +226,14 @@ $(function() {
     return COLORS[index];
   }
 
-  function informConnError(err) {
+  function connError(err) {
     console.log('connection is down with');
     console.log(err);
   }
 
-  function informReconnect() {
+  function reconnect() {
     // socket.emit('add user', username);
+    socket.emit('back online', lastDatetime);
     console.log('client reconnected');
   }
 
@@ -306,11 +314,13 @@ $(function() {
     // removeChatTyping(data);
   });
 
+  //when a connection breaks
   socket.on('connect_error', function(err){
-    informConnError(err);
+    connError(err);
   });
 
+  //when a client gets back online
   socket.on('reconnect', function(){
-    informReconnect();
+    reconnect();
   });
 });
