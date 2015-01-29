@@ -25,11 +25,15 @@ Every messages has a timestamp (datetime property) which is value in Epoch time 
 In that way every client gets a normalized time for each messages based on which it can sort existing messages. Current Web client uses jQuery to sort a ul based on these timestamps.
 
 ##Improvements and Optimizations
+The submitted code is not perfect and I fell victim to "I wanted to impress you with a gazillion features". I wanted to implement both the Web client and Android versions of the client but in the end ended up submitting issue request on GitHub and going through the source code of the Android library to do a pull request. I also spent a lot of time figuring out how to share the express session with the socket one. Having all that in mind I feel like this code I'm submitting looks underwhelming.
+
 User sessions are stored in memory so when a server restarts, every user needs to reconnect again - a standalone store for handling sessions must be set in production.
 
-The submitted code is not perfect and I fell victim to "I wanted to impress you with a gazillion features". I wanted to implement both the Web client and Android versions of the client but in the end ended up submitting issue request on GitHub and going through the source code of the Android library to do a pull request.
+As you may see in the code I defined a lot more events than just pure `new message` (`user joined`, `user is typing`, `user left` etc.). These events would improve the overall UX of the chat app. But because of lack of time I commented them all in order to fully support merging of offline messages in the stream. 
 
-As you may see in the code I defined a lot more events than just pure `new message` (`user joined`, `user is typing` etc.) but because of lack of time I commented them all in order to fully support merging of offline messages in the stream. 
+Even though the offline mode is implemented, the app still lacks the emiting to an offline client the messages that he passed while he was offline. The event for listening when a client connects back is in place but the logic of determining which messages should be emitted to that particular client needs to be worked on.
+
+And of course, the scaling of the application, that is, writting the proxy configuration and relaying of messages of Node instances.
 
 ##Requirements
 Run `npm install` (node and npm need to be installed and Mongo up and running). After installing all dependencies run `node server.js` and then go to `localhost:3000` (or whatever your local IP address is) to login and start chatting.
