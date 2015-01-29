@@ -38,8 +38,6 @@ server.listen(port, function() {
 // Routing
 app.use(express.static(__dirname + '/public'));
 
-// usernames which are currently connected to the chat
-var usernames = {};
 var numUsers = 0;
 
 var getUsernameFromSession = function(socketRequest) {
