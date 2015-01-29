@@ -25,7 +25,7 @@ Every messages has a timestamp (datetime property) which is value in Epoch time 
 In that way every client gets a normalized time for each messages based on which it can sort existing messages. Current Web client uses jQuery to sort a ul based on these timestamps.
 
 ##Improvements and Optimizations
-The submitted code is not perfect and I fell victim to "I wanted to impress you with a gazillion features". I wanted to implement both the Web client and Android versions of the client but in the end ended up submitting issue request on GitHub and going through the source code of the Android library to do a pull request. I also spent a lot of time figuring out how to share the express session with the socket one. Having all that in mind I feel like this code I'm submitting looks underwhelming.
+The submitted code is not perfect and I fell victim to "I wanted to impress you with a gazillion features". I wanted to implement both the Web client and [Android](https://github.com/nemanjavuk/fuzzy-chat-android) versions of the client but in the end ended up submitting issue request on GitHub and going through the source code of the Android library to do a pull request. I also spent a lot of time figuring out how to share the express session with the socket one. Having all that in mind I feel like this code I'm submitting looks underwhelming.
 
 User sessions are stored in memory so when a server restarts, every user needs to reconnect again - a standalone store for handling sessions must be set in production.
 

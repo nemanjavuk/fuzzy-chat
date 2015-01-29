@@ -61,9 +61,6 @@ app.get('/logout', function(req, res) {
 });
 
 io.on('connection', function(socket) {
-  console.log('SESSION');
-  var addedUser = false;
-
   // when the client emits 'new message', this listens and executes
   socket.on('new message', function(data) {
     var usernameSession = getUsernameFromSession(socket.request);
@@ -94,7 +91,6 @@ io.on('connection', function(socket) {
   socket.on('add user', function(username) {
     var usernameSession = getUsernameFromSession(socket.request);
     ++numUsers;
-    addedUser = true;
     socket.emit('login', {
       numUsers: numUsers
     });
